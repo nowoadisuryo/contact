@@ -26,8 +26,8 @@ export default class UserService {
 
     async signIn(email: string, password: string) {
         let user = await this.findByEmail(email)
-        if (!user) throw new Error("Email, username or password is wrong. Please try again.")
+        if (!user) return Promise.reject(new Error("Email or password is wrong. Please try again."))
         if (await this.passwordHasher.check(password, user.password) === true) return generateAccessToken(user)
-        else throw new Error("Email, username or password is wrong. Please try again.")
+        else return Promise.reject(new Error("Email or password is wrong. Please try again."))
     }
 }
