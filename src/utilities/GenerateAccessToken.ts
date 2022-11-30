@@ -1,9 +1,6 @@
 import UserInterface from "../interfaces/UserInterface.js"
 import jwt from "jsonwebtoken"
-import dotenv from "dotenv"
 import { SECRET, SYMMETRIC_ALGO, TOKEN_ISSUER } from "../utilities/Environments.js"
-
-dotenv.config()
 
 export default function generateAccessToken(user: UserInterface): string {
     if (!user) throw new Error('Invalid user')
