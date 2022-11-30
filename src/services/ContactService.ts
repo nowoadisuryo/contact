@@ -17,7 +17,7 @@ class ContactService {
         const validation = await validate(_contact, ContactSchema)
         for (let i = 0; i < validation.length; i++) {
             if (validation[i].success === false) {
-                throw new ValidationError()
+                return Promise.reject(new ValidationError())
             }
         }
         contact._id = this.addId(this.contacts.length)
@@ -30,7 +30,7 @@ class ContactService {
         const validation = await validate(_contact, ContactSchema)
         for (let i = 0; i < validation.length; i++) {
             if (validation[i].success === false) {
-                throw new ValidationError()
+                return Promise.reject(new ValidationError())
             }
         }
         let newData = {}
@@ -44,7 +44,7 @@ class ContactService {
         })
 
         if (Object.keys(newData).length !== 0) return newData
-        else throw new NotFoundError()
+        else return Promise.reject(new NotFoundError())
     }
 
     findAll() {
@@ -53,20 +53,13 @@ class ContactService {
 
     findOne(id: number) {
         let contact = this.contacts.filter(function (el: any) {
-            if (el) {
-                return el._id == id
-            }
-            else {
-                return null
-            }
-
+            return el._id == id
         })
-        return contact
+        if (contact.length === 0) return null
+        else return contact[0]
     }
 
     deleteOne(id: number) {
-        console.log(id);
-
         let deleted = false
         this.contacts = this.contacts.map(function (currentValue, index, arr) {
             if (currentValue._id == id) {
@@ -95,7 +88,11 @@ class ContactService {
                 if (a.full_name > b.full_name) return 1
                 else return 0
             }
-            else return 0
+            else {
+                if (a._id! < b._id!) return -1
+                if (a._id! > b._id!) return 1
+                else return 0
+            }
         }
         return this.contacts.sort(compare).filter(function (currentValue) { return currentValue })
     }
