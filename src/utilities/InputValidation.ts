@@ -19,5 +19,5 @@ export default function validate(source: any, schema: any) {
             }
         }
     })
-    return error || { sucess: true, result: result }
+    return error
 }
