@@ -1,3 +1,5 @@
+import AuthenticationError from "../errors/AuthenticationError.js"
+import NotFoundError from "../errors/NotFoundError.js"
 import UserInterface from "../interfaces/UserInterface.js"
 import generateAccessToken from "../utilities/GenerateAccessToken.js"
 import PasswordHasher from "../utilities/PasswordHasher.js"
@@ -26,8 +28,9 @@ export default class UserService {
 
     async signIn(email: string, password: string) {
         let user = await this.findByEmail(email)
-        if (!user) return Promise.reject(new Error("Email or password is wrong. Please try again."))
+
+        if (!user) return Promise.reject(new NotFoundError("Email or password is wrong. Please try again."))
         if (await this.passwordHasher.check(password, user.password) === true) return generateAccessToken(user)
-        else return Promise.reject(new Error("Email or password is wrong. Please try again."))
+        else return Promise.reject(new AuthenticationError("Email or password is wrong. Please try again."))
     }
 }
