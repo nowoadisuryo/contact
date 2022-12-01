@@ -93,7 +93,7 @@ describe('Contact Service', function () {
 
     describe('Find One', function () {
         it('Should return null', function () {
-            expect(contactService.findOne(2)).to.null
+            expect(contactService.findOne(2)).to.be.rejectedWith(NotFoundError)
         })
 
         it('Should return a contact', function () {
