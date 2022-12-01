@@ -1,6 +1,5 @@
 import chaiHttp from "chai-http"
 import chai, { expect, use } from "chai"
-import { } from "../../utilities/Environments.js"
 import HTTPStatusCode from "../../utilities/HTTPStatusCode.js"
 import app from "../Express.js"
 import { admin, user } from "../Constant.js"
