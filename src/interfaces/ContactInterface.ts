@@ -1,4 +1,4 @@
-export default interface IContact {
+export default interface ContactInterface {
     _id?: number;
     full_name: string;
     phone_number: string;

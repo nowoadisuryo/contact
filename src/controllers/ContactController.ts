@@ -97,9 +97,23 @@ router.get(
                 .setHeader('content-type', 'application/json')
                 .send(contact.sortBy(`${req.query.field}`))
         } catch (error) {
+            console.log(error);
+
             req.error = error
             next(error)
         }
     })
+
+router.get(
+    '/:id',
+    async function (req: RequestInterface, res: Response, next: NextFunction) {
+        try {
+            res.status(HTTPStatusCode.OK).json(await contact.findOne(parseInt(req.params.id)))
+        } catch (error) {
+            req.error = error
+            next(error)
+        }
+    }
+)
 
 export { router }

@@ -55,7 +55,7 @@ class ContactService {
         let contact = this.contacts.filter(function (el: any) {
             return el._id == id
         })
-        if (contact.length === 0) return null
+        if (contact.length === 0) return Promise.reject(new NotFoundError())
         else return contact[0]
     }
 
