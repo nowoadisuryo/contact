@@ -62,7 +62,7 @@ jobs:
           account-url: ACCOUNT_URL
           dockerfile: Dockerfile
           profile-name: default
-          region: $region
+          region: ${region}
           repo: $repo
           tag: "migration-latest,migration-${CIRCLE_BUILD_NUM}"
   run-migrations:
