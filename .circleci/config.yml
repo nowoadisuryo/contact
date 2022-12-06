@@ -83,7 +83,7 @@ jobs:
 
 workflows:
   version: 2
-  build-deploy-master:
+  build-deploy-main:
     jobs:
       - init
       - aws-setup:
@@ -92,14 +92,14 @@ workflows:
           filters:
             branches:
               only:
-                - master
-          context: master
+                - main
+          context: main
       - run-migrations:
           filters:
             branches:
               only:
-                - master
-          context: master
+                - main
+          context: main
           requires:
             - aws-setup
             - build-migration-image
@@ -107,7 +107,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
-          context: master
+                - main
+          context: main
           requires:
             - aws-setup
