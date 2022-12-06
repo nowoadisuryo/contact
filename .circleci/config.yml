@@ -21,7 +21,7 @@ jobs:
           at: .
       - run:
           name: Get cluster info
-          command: ./script.sh
+          command: ./scripts/get_cluster_info.sh
       - run:
           name: Associate cluster
           command: |
