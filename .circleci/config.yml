@@ -17,6 +17,8 @@ jobs:
     steps:
       - aws-cli/setup
       - jq/install
+      - attach_workspace:
+          at: .
       - run:
           name: Get cluster info
           command: ./script.sh
