@@ -1,71 +1,114 @@
 version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@3.1.4
+  aws-ecr: circleci/aws-ecr@8.1.3
+  aws-ecs: circleci/aws-ecs@3.2.0
+  jq: circleci/jq@2.2.0
+
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:18.12.1
+
 jobs:
-  # running commands on a basic image
-  Hello-World:
+  init:
     docker:
-      - image: alpine:3.15
-        auth:
-          username: mydockerhub-user
-          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+      - image: cimg/base:stable
     steps:
+      - aws-cli/setup
+      - jq/install
       - run:
-          name: Saying Hello
+          name: Get cluster info
           command: |
-            echo 'Hello World!'
-            echo 'This is the delivery pipeline'
-  # fetching code from the repo
-  Fetch-Code:
-    docker:
-      - image: cimg/base:2021.04
-        auth:
-          username: mydockerhub-user
-          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+            SERVICES_OBJ=$(aws ecs describe-services --cluster "${ECS_CLUSTER_NAME}" --services "${ECS_SERVICE_NAME}")
+            VPC_CONF_OBJ=$(echo $SERVICES_OBJ | jq '.services[].networkConfiguration.awsvpcConfiguration')
+            SUBNET_ONE=$(echo "$VPC_CONF_OBJ" |  jq '.subnets[0]')
+            SUBNET_TWO=$(echo "$VPC_CONF_OBJ" |  jq '.subnets[1]')
+            SECURITY_GROUP_IDS=$(echo "$VPC_CONF_OBJ" |  jq '.securityGroups[0]')
+            CLUSTER_NAME=$(echo "$SERVICES_OBJ" |  jq '.services[].clusterArn')
+            echo "export SUBNET_ONE=$SUBNET_ONE" >> $BASH_ENV
+            echo "export SUBNET_TWO=$SUBNET_TWO" >> $BASH_ENV
+            echo "export SECURITY_GROUP_IDS=$SECURITY_GROUP_IDS" >> $BASH_ENV=$SECURITY_GROUP_IDS=$SECURITY_GROUP_IDS" >> $BASH_ENV" >> $BASH_ENV
+            echo "export CLUSTER_NAME=$CLUSTER_NAME" >> $BASH_ENV
+      - run:
+          name: Associate cluster
+          command: |
+            aws ecs put-cluster-capacity-providers \
+              --cluster "${ECS_CLUSTER_NAME}" \
+              --capacity-providers FARGATE FARGATE_SPOT  \
+              --default-capacity-provider-strategy capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1\
+              --region ${region}
+  aws-setup:
+    executor: aws-cli/default
+    working_directory: ~/node/backend_app
     steps:
-      - checkout
-      - run:
-          name: Getting the Code
-          command: |
-            ls -al
-            echo '^^^Your repo files^^^'
-  # running a node container
-  Using-Node:
-    docker:
-      - image: cimg/node:17.2
-        auth:
-          username: mydockerhub-user
-          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+      - aws-cli/setup:
+          profile-name: default
+      - persist_to_workspace:
+          root: ~/node/backend_app
+          paths:
+            - .
+  build-migration-image:
+    executor:
+      name: aws-ecr/default
+      use-docker-layer-caching: true
+    working_directory: ~/node/backend_app
+    environment:
+      ACCOUNT_URL: $account_id.dkr.ecr.$region.amazonaws.com
     steps:
-      - run:
-          name: Running the Node Container
-          command: |
-            node -v
-  Now-Complete:
-    docker:
-      - image: alpine:3.15
-        auth:
-          username: mydockerhub-user
-          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+      - attach_workspace:
+          at: .
+      - aws-ecr/build-and-push-image:
+          account-url: ACCOUNT_URL
+          dockerfile: Dockerfile
+          profile-name: default
+          region: $region
+          repo: $repo
+          tag: "migration-latest,migration-${CIRCLE_BUILD_NUM}"
+  run-migrations:
+    executor: aws-cli/default
+    working_directory: ~/node/backend_app
     steps:
-      - run:
-          name: Approval Complete
-          command: |
-            echo 'The work is now complete.'
+      - aws-cli/setup
+      - attach_workspace:
+          at: .
+      - aws-cli/setup:
+          profile-name: default
+      - aws-ecs/run-task:
+          cluster: $CLUSTER_NAME
+          capacity-provider-strategy: capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1
+          launch-type: ""
+          task-definition: webapp-fargate-task
+          subnet-ids: "$SUBNET_ONE, $SUBNET_TWO"
+          security-group-ids: $SECURITY_GROUP_IDS
+          assign-public-ip: ENABLED
+          count: 4
 
 workflows:
-  Example-Workflow:
+  version: 2
+  build-deploy-master:
     jobs:
-      - Hello-World
-      - Fetch-Code:
+      - init
+      - aws-setup:
+          filters:
+            branches:
+              only:
+                - master
+          context: master
+      - run-migrations:
+          filters:
+            branches:
+              only:
+                - master
+          context: master
           requires:
-            - Hello-World
-      - Using-Node:
+            - aws-setup
+            - build-migration-image
+      - build-migration-image:
+          filters:
+            branches:
+              only:
+                - master
+          context: master
           requires:
-            - Fetch-Code
-      - Hold-for-Approval:
-          type: approval
-          requires:
-            - Using-Node
-            - Fetch-Code
-      - Now-Complete:
-          requires:
-            - Hold-for-Approval
+            - aws-setup
