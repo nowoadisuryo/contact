@@ -47,7 +47,7 @@ jobs:
             export TZ=${TZ}
             export LOGS_DIR=${LOGS_DIR}
             export ERROR_LOG_FILENAME=${ERROR_LOG_FILENAME}
-            echo $NODE_ENV
+            echo ${NODE_ENV}
       - aws-ecr/build-and-push-image:
           account-url: ACCOUNT_URL
           dockerfile: Dockerfile
