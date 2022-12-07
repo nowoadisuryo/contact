@@ -36,18 +36,17 @@ jobs:
           name: Get ENV
           command: |
             echo 'export NODE_ENV=${NODE_ENV}' >> "$BASH_ENV"
-            export HOST=${HOST}
-            export PORT=${PORT}
-            export MONGODB_URI=${MONGODB_URI}
-            export REDIS_HOST=${REDIS_HOST}
-            export REDIS_PORT=${REDIS_PORT}
-            export TOKEN_ISSUER=${TOKEN_ISSUER}
-            export SECRET=${SECRET}
-            export SYMMETRIC_ALGO=${SYMMETRIC_ALGO}
-            export TZ=${TZ}
-            export LOGS_DIR=${LOGS_DIR}
-            export ERROR_LOG_FILENAME=${ERROR_LOG_FILENAME}
-            echo ${NODE_ENV}
+            echo 'export HOST=${HOST}' >> "$BASH_ENV"
+            echo 'export PORT=${PORT}' >> "$BASH_ENV"
+            echo 'export MONGODB_URI=${MONGODB_URI}' >> "$BASH_ENV"
+            echo 'export REDIS_HOST=${REDIS_HOST}' >> "$BASH_ENV"
+            echo 'export REDIS_PORT=${REDIS_PORT}' >> "$BASH_ENV"
+            echo 'export TOKEN_ISSUER=${TOKEN_ISSUER}' >> "$BASH_ENV"
+            echo 'export SECRET=${SECRET}' >> "$BASH_ENV"
+            echo 'export SYMMETRIC_ALGO=${SYMMETRIC_ALGO}' >> "$BASH_ENV"
+            echo 'export TZ=${TZ}' >> "$BASH_ENV"
+            echo 'export LOGS_DIR=${LOGS_DIR}' >> "$BASH_ENV"
+            echo 'export ERROR_LOG_FILENAME=${ERROR_LOG_FILENAME}' >> "$BASH_ENV"
       - aws-ecr/build-and-push-image:
           account-url: ACCOUNT_URL
           dockerfile: Dockerfile
