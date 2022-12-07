@@ -12,7 +12,7 @@ RUN apk update && apk add bash
 COPY /src ./src
 COPY tsconfig.json ./
 
-RUN npm run test
+RUN npm run build
 RUN rm -r ./src
 RUN rm tsconfig.json
 
