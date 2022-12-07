@@ -51,7 +51,7 @@ jobs:
       use-docker-layer-caching: true
     working_directory: ~/node/backend_app
     environment:
-      ACCOUNT_URL: $account_id.dkr.ecr.$region.amazonaws.com
+      ACCOUNT_URL: ${account_id}.dkr.ecr.${region}.amazonaws.com
     steps:
       - attach_workspace:
           at: .
