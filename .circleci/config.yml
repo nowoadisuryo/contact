@@ -12,7 +12,7 @@ executors:
       - image: cimg/node:18.12.1
 
 jobs:
-  aws-cli-setup:
+  aws-setup:
     executor: aws-cli/default
     working_directory: ~/node/backend_app
     steps:
@@ -22,7 +22,7 @@ jobs:
           root: ~/node/backend_app
           paths:
             - .
-  build:
+  build-migration-image:
     executor:
       name: aws-ecr/default
       use-docker-layer-caching: true
@@ -38,15 +38,17 @@ jobs:
           dockerfile: Dockerfile
           profile-name: default
           region: AWS_DEFAULT_REGION
-          repo: contact-repository
+          repo: $MY_APP_PREFIX
           tag: "migration-latest,migration-${CIRCLE_BUILD_NUM}"
-  before-deploy:
+  run-migrations:
     executor: aws-cli/default
     working_directory: ~/node/backend_app
     steps:
       - jq/install
       - attach_workspace:
           at: .
+      - aws-cli/setup:
+          profile-name: default
       - run:
           name: Get cluster info
           command: |
@@ -68,37 +70,7 @@ jobs:
               --capacity-providers FARGATE FARGATE_SPOT  \
               --default-capacity-provider-strategy capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1\
               --region ${AWS_DEFAULT_REGION}
-
-workflows:
-  version: 2
-  build-deploy-main:
-    jobs:
-      - aws-cli-setup:
-          filters:
-            branches:
-              only:
-                - main
-          context: main
-      - before-deploy:
-          filters:
-            branches:
-              only:
-                - main
-          context: main
-          requires:
-            - awscli--setup
-            - build
-      - build:
-          filters:
-            branches:
-              only:
-                - main
-          context: main
-          requires:
-            - aws-cli-setup
-      - aws-ecs/deploy-service-update:
-          requires:
-            - aws-ecr/build-and-push-image
+      - aws-ecs/run-task:
           cluster: $CLUSTER_NAME
           launch-type: "FARGATE"
           task-definition: contact-app
@@ -106,3 +78,38 @@ workflows:
           security-group-ids: $SECURITY_GROUP_IDS
           assign-public-ip: ENABLED
           count: 1
+
+workflows:
+  version: 2
+  build-deploy-main:
+    jobs:
+      - aws-setup:
+          filters:
+            branches:
+              only:
+                - main
+          context: main
+      - run-migrations:
+          filters:
+            branches:
+              only:
+                - main
+          context: main
+          requires:
+            - aws-setup
+            - build-migration-image
+            - aws-ecs/deploy-service-update
+      - build-migration-image:
+          filters:
+            branches:
+              only:
+                - main
+          context: main
+          requires:
+            - aws-setup
+      - aws-ecs/deploy-service-update:
+          requires:
+            - build-migration-image
+          family: "${MY_APP_PREFIX}-service"
+          cluster: "${MY_APP_PREFIX}-cluster"
+          container-image-name-updates: "container=${MY_APP_PREFIX}-service,tag=${CIRCLE_SHA1}"
