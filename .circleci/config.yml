@@ -27,6 +27,8 @@ jobs:
             SUBNET_TWO=$(echo "$VPC_CONF_OBJ" | jq '.subnets[1]')
             SECURITY_GROUP_IDS=$(echo "$VPC_CONF_OBJ" | jq '.securityGroups[0]')
             CLUSTER_NAME=$(echo "$SERVICES_OBJ" | jq '.services[].clusterArn')
+            export SUBNET_ONE=$SUBNET_ONE
+            echo SUBNET_ONE
       - run:
           name: Associate cluster
           command: |
