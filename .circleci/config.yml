@@ -32,27 +32,12 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - run:
-          name: Get ENV
-          command: |
-            echo 'export NODE_ENV=${NODE_ENV}' >> "$BASH_ENV"
-            echo 'export HOST=${HOST}' >> "$BASH_ENV"
-            echo 'export PORT=${PORT}' >> "$BASH_ENV"
-            echo 'export MONGODB_URI=${MONGODB_URI}' >> "$BASH_ENV"
-            echo 'export REDIS_HOST=${REDIS_HOST}' >> "$BASH_ENV"
-            echo 'export REDIS_PORT=${REDIS_PORT}' >> "$BASH_ENV"
-            echo 'export TOKEN_ISSUER=${TOKEN_ISSUER}' >> "$BASH_ENV"
-            echo 'export SECRET=${SECRET}' >> "$BASH_ENV"
-            echo 'export SYMMETRIC_ALGO=${SYMMETRIC_ALGO}' >> "$BASH_ENV"
-            echo 'export TZ=${TZ}' >> "$BASH_ENV"
-            echo 'export LOGS_DIR=${LOGS_DIR}' >> "$BASH_ENV"
-            echo 'export ERROR_LOG_FILENAME=${ERROR_LOG_FILENAME}' >> "$BASH_ENV"
       - aws-ecr/build-and-push-image:
           account-url: ACCOUNT_URL
           dockerfile: Dockerfile
           profile-name: default
           region: AWS_DEFAULT_REGION
-          repo: 545108995501.dkr.ecr.ap-southeast-3.amazonaws.com/contact-repository
+          repo: contact-repository
           tag: "migration-latest,migration-${CIRCLE_BUILD_NUM}"
   run-migrations:
     executor: aws-cli/default
@@ -73,10 +58,10 @@ jobs:
             SUBNET_TWO=$(echo "$VPC_CONF_OBJ" | jq '.subnets[1]')
             SECURITY_GROUP_IDS=$(echo "$VPC_CONF_OBJ" | jq '.securityGroups[0]')
             CLUSTER_NAME=$(echo "$SERVICES_OBJ" | jq '.services[].clusterArn')
-            export SUBNET_ONE=$SUBNET_ONE
-            export SUBNET_TWO=$SUBNET_TWO
-            export SECURITY_GROUP_IDS=$SECURITY_GROUP_IDS
-            export CLUSTER_NAME=$CLUSTER_NAME
+            echo "export SUBNET_ONE=$SUBNET_ONE" >> "$BASH_ENV"
+            echo "export SUBNET_TWO=$SUBNET_TWO" >> "$BASH_ENV"
+            echo "export SECURITY_GROUP_IDS=$SECURITY_GROUP_IDS" >> "$BASH_ENV"
+            echo "export CLUSTER_NAME=$CLUSTER_NAME" >> "$BASH_ENV"
       - run:
           name: Associate cluster
           command: |
@@ -87,13 +72,12 @@ jobs:
               --region ${AWS_DEFAULT_REGION}
       - aws-ecs/run-task:
           cluster: $CLUSTER_NAME
-          capacity-provider-strategy: capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1
-          launch-type: ""
-          task-definition: webapp-fargate-task
+          launch-type: "FARGATE"
+          task-definition: contact-app
           subnet-ids: "$SUBNET_ONE, $SUBNET_TWO"
           security-group-ids: $SECURITY_GROUP_IDS
           assign-public-ip: ENABLED
-          count: 4
+          count: 1
 
 workflows:
   version: 2
