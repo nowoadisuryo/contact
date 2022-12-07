@@ -12,29 +12,6 @@ executors:
       - image: cimg/node:18.12.1
 
 jobs:
-  init:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - aws-cli/setup
-      - jq/install
-      - run:
-          name: Get cluster info
-          command: |
-            SERVICES_OBJ=$(aws ecs describe-services --cluster "${ECS_CLUSTER_NAME}" --services "${ECS_SERVICE_NAME}")
-            VPC_CONF_OBJ=$(echo $SERVICES_OBJ | jq '.services[].networkConfiguration.awsvpcConfiguration')
-            SUBNET_ONE=$(echo "$VPC_CONF_OBJ" | jq '.subnets[0]')
-            SUBNET_TWO=$(echo "$VPC_CONF_OBJ" | jq '.subnets[1]')
-            SECURITY_GROUP_IDS=$(echo "$VPC_CONF_OBJ" | jq '.securityGroups[0]')
-            CLUSTER_NAME=$(echo "$SERVICES_OBJ" | jq '.services[].clusterArn')
-      - run:
-          name: Associate cluster
-          command: |
-            aws ecs put-cluster-capacity-providers \
-              --cluster "${ECS_CLUSTER_NAME}" \
-              --capacity-providers FARGATE FARGATE_SPOT  \
-              --default-capacity-provider-strategy capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1\
-              --region ${AWS_DEFAULT_REGION}
   aws-setup:
     executor: aws-cli/default
     working_directory: ~/node/backend_app
@@ -55,6 +32,22 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - run:
+          name: Get ENV
+          command: |
+            echo 'export NODE_ENV=${NODE_ENV}' >> "$BASH_ENV"
+            export HOST=${HOST}
+            export PORT=${PORT}
+            export MONGODB_URI=${MONGODB_URI}
+            export REDIS_HOST=${REDIS_HOST}
+            export REDIS_PORT=${REDIS_PORT}
+            export TOKEN_ISSUER=${TOKEN_ISSUER}
+            export SECRET=${SECRET}
+            export SYMMETRIC_ALGO=${SYMMETRIC_ALGO}
+            export TZ=${TZ}
+            export LOGS_DIR=${LOGS_DIR}
+            export ERROR_LOG_FILENAME=${ERROR_LOG_FILENAME}
+            echo ${NODE_ENV}
       - aws-ecr/build-and-push-image:
           account-url: ACCOUNT_URL
           dockerfile: Dockerfile
@@ -67,10 +60,32 @@ jobs:
     working_directory: ~/node/backend_app
     steps:
       - aws-cli/setup
+      - jq/install
       - attach_workspace:
           at: .
       - aws-cli/setup:
           profile-name: default
+      - run:
+          name: Get cluster info
+          command: |
+            SERVICES_OBJ=$(aws ecs describe-services --cluster "${ECS_CLUSTER_NAME}" --services "${ECS_SERVICE_NAME}")
+            VPC_CONF_OBJ=$(echo $SERVICES_OBJ | jq '.services[].networkConfiguration.awsvpcConfiguration')
+            SUBNET_ONE=$(echo "$VPC_CONF_OBJ" | jq '.subnets[0]')
+            SUBNET_TWO=$(echo "$VPC_CONF_OBJ" | jq '.subnets[1]')
+            SECURITY_GROUP_IDS=$(echo "$VPC_CONF_OBJ" | jq '.securityGroups[0]')
+            CLUSTER_NAME=$(echo "$SERVICES_OBJ" | jq '.services[].clusterArn')
+            export SUBNET_ONE=$SUBNET_ONE
+            export SUBNET_TWO=$SUBNET_TWO
+            export SECURITY_GROUP_IDS=$SECURITY_GROUP_IDS
+            export CLUSTER_NAME=$CLUSTER_NAME
+      - run:
+          name: Associate cluster
+          command: |
+            aws ecs put-cluster-capacity-providers \
+              --cluster "${ECS_CLUSTER_NAME}" \
+              --capacity-providers FARGATE FARGATE_SPOT  \
+              --default-capacity-provider-strategy capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1\
+              --region ${AWS_DEFAULT_REGION}
       - aws-ecs/run-task:
           cluster: $CLUSTER_NAME
           capacity-provider-strategy: capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1
@@ -85,10 +100,7 @@ workflows:
   version: 2
   build-deploy-main:
     jobs:
-      - init
       - aws-setup:
-          requires:
-            - init
           filters:
             branches:
               only:
