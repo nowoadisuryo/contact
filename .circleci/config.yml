@@ -110,6 +110,6 @@ workflows:
       - aws-ecs/deploy-service-update:
           requires:
             - build-migration-image
-          family: "${MY_APP_PREFIX}-service"
-          cluster: "${MY_APP_PREFIX}-cluster"
+          family: "${ECS_SERVICE_NAME}"
+          cluster: "${$CLUSTER_NAME}"
           container-image-name-updates: "container=${MY_APP_PREFIX}-service,tag=${CIRCLE_SHA1}"
