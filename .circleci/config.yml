@@ -35,7 +35,7 @@ jobs:
       - run:
           name: Get ENV
           command: |
-            export NODE_ENV=${NODE_ENV}
+            echo 'export NODE_ENV=${NODE_ENV}' >> "$BASH_ENV"
             export HOST=${HOST}
             export PORT=${PORT}
             export MONGODB_URI=${MONGODB_URI}
