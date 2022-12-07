@@ -48,6 +48,9 @@ jobs:
           root: ~/node/backend_app
           paths:
             - .
+      - run:
+          name: Test env
+          command: echo $HELLOS
   build-migration-image:
     executor:
       name: aws-ecr/default
