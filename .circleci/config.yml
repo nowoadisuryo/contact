@@ -73,7 +73,7 @@ jobs:
       - aws-ecs/run-task:
           cluster: $CLUSTER_NAME
           launch-type: "FARGATE"
-          task-definition: run-contact-web-server
+          task-definition: contact-app
           subnet-ids: "$SUBNET_ONE, $SUBNET_TWO"
           security-group-ids: $SECURITY_GROUP_IDS
           assign-public-ip: ENABLED
