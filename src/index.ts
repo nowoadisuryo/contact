@@ -13,6 +13,9 @@ app.use(bodyParser.urlencoded({ extended: false }))
 AuthenticationMiddleware(app)
 
 // Routes
+app.use('/', function() {
+    return 'Welcome to the backend server'
+})
 app.use('/user', UserRouter)
 app.use('/contact', ContactRouter)
 
