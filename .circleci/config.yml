@@ -37,7 +37,7 @@ workflows:
           aws-cli-version: latest
           dockerfile: Dockerfile
           executor: aws-ecr/default
-          region: AWS_DEFAULT_REGION
+          region: "${AWS_DEFAULT_REGION}"
           repo: "${MY_REPO}"
           tag: "latest"
       - aws-ecs/deploy-service-update:
