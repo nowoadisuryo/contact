@@ -28,6 +28,10 @@ jobs:
           cluster: "contact-app-cluster"
           service-name: "contact-app-service"
           task-definition-arn: "${TASK_DEFINITION_ARN}"
+      - run:
+          name: Run the latest task
+          command: >
+            aws ecs run-task --cluster contact-app-cluster --task-definition $TASK_DEFINITION_ARN
 
 workflows:
   build-and-deploy:
