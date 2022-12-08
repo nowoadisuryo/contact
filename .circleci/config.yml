@@ -32,6 +32,10 @@ workflows:
   build-and-deploy:
     jobs:
       - aws-ecr/build-and-push-image: # orb built-in job
+          account-url: ACCOUNT_URL
+          dockerfile: Dockerfile
+          profile-name: default
+          region: AWS_DEFAULT_REGION
           repo: '${MY_APP_PREFIX}'
           tag: '${CIRCLE_SHA1}'
       - aws-ecs/deploy-service-update: # orb built-in job
