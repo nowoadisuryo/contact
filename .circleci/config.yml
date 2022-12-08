@@ -108,5 +108,5 @@ workflows:
       - aws-ecs/deploy-service-update:
           requires:
             - build-migration-image
-          region: ap-southeast-3
-          task-definition: contact-app:1
+          cluster: contact-app-cluster
+          family: contact-app-service
