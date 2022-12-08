@@ -20,7 +20,7 @@ jobs:
           dockerfile: Dockerfile
           profile-name: default
           region: AWS_DEFAULT_REGION
-          repo: "${MY_APP_PREFIX}"
+          repo: "contact-repository"
           tag: "${CIRCLE_SHA1}"
   verify-deployment:
     executor: aws-cli/default
