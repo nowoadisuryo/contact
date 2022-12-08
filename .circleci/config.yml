@@ -26,6 +26,7 @@ jobs:
       - aws-ecs/verify-revision-is-deployed:
           family: "contact-app"
           cluster: "contact-app-cluster"
+          service-name: "contact-app-service"
           task-definition-arn: "${TASK_DEFINITION_ARN}"
 
 workflows:
