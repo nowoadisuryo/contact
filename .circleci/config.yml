@@ -1,9 +1,9 @@
 version: 2.1
 
 orbs:
-  aws-ecr: circleci/aws-ecr@8.1.2 # use the AWS ECR orb
-  aws-ecs: circleci/aws-ecs@3.2.0 # use the AWS ECS orb
-  aws-cli: circleci/aws-cli@3.1.1 # use the AWS CLI orb
+  aws-ecr: circleci/aws-ecr@8.1.2
+  aws-ecs: circleci/aws-ecs@3.2.0
+  aws-cli: circleci/aws-cli@3.1.1
 
 jobs:
   verify-deployment:
@@ -24,9 +24,9 @@ jobs:
             echo "export TASK_DEFINITION_ARN='${TASK_DEFINITION_ARN}'" >>
             "$BASH_ENV"
       - aws-ecs/verify-revision-is-deployed:
-          family: "contact-app"
-          cluster: "contact-app-cluster"
-          service-name: "contact-app-service"
+          family: "${MY_APP_PREFIX}"
+          cluster: "${MY_APP_PREFIX}-cluster"
+          service-name: "${MY_APP_PREFIX}-service"
           task-definition-arn: "${TASK_DEFINITION_ARN}"
 
 workflows:
@@ -41,14 +41,14 @@ workflows:
           executor: aws-ecr/default
           region: "${AWS_DEFAULT_REGION}"
           repo: "${MY_REPO}"
-          tag: "latest"
+          tag: "${CIRCLE_SHA1}"
       - aws-ecs/deploy-service-update:
           requires:
             - aws-ecr/build-and-push-image
-          family: "contact-app"
-          cluster: "contact-app-cluster"
-          service-name: "contact-app-service"
-          container-image-name-updates: "container=contact-app,tag=latest"
+          family: "${MY_APP_PREFIX}"
+          cluster: "${MY_APP_PREFIX}-cluster"
+          service-name: "${MY_APP_PREFIX}-service"
+          container-image-name-updates: "container=${MY_APP_PREFIX},tag=${CIRCLE_SHA1}"
       - verify-deployment:
           requires:
             - aws-ecs/deploy-service-update
