@@ -98,7 +98,7 @@ workflows:
           requires:
             - aws-setup
             - build-migration-image
-            - aws-ecs/deploy-service-update
+            # - aws-ecs/deploy-service-update
       - build-migration-image:
           filters:
             branches:
@@ -107,9 +107,9 @@ workflows:
           context: main
           requires:
             - aws-setup
-      - aws-ecs/deploy-service-update:
-          requires:
-            - build-migration-image
-          family: "contact"
-          cluster: "fargate-spot"
-          container-image-name-updates: "container=contact,tag=${CIRCLE_SHA1}"
+      # - aws-ecs/deploy-service-update:
+      #     requires:
+      #       - build-migration-image
+      #     family: "contact"
+      #     cluster: "fargate-spot"
+      #     container-image-name-updates: "container=contact,tag=${CIRCLE_SHA1}"
