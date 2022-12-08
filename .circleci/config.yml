@@ -30,8 +30,6 @@ jobs:
     environment:
       ACCOUNT_URL: "545108995501.dkr.ecr.ap-southeast-3.amazonaws.com"
     steps:
-      - attach_workspace:
-          at: .
       - checkout
       - aws-ecr/build-and-push-image:
           account-url: ACCOUNT_URL
@@ -40,44 +38,44 @@ jobs:
           region: AWS_DEFAULT_REGION
           repo: $MY_APP_PREFIX
           tag: "migration-latest,migration-${CIRCLE_BUILD_NUM}"
-  run-migrations:
-    executor: aws-cli/default
-    working_directory: ~/node/backend_app
-    steps:
-      - jq/install
-      - attach_workspace:
-          at: .
-      - aws-cli/setup:
-          profile-name: default
-      - run:
-          name: Get cluster info
-          command: |
-            SERVICES_OBJ=$(aws ecs describe-services --cluster "${ECS_CLUSTER_NAME}" --services "${ECS_SERVICE_NAME}")
-            VPC_CONF_OBJ=$(echo $SERVICES_OBJ | jq '.services[].networkConfiguration.awsvpcConfiguration')
-            SUBNET_ONE=$(echo "$VPC_CONF_OBJ" | jq '.subnets[0]')
-            SUBNET_TWO=$(echo "$VPC_CONF_OBJ" | jq '.subnets[1]')
-            SECURITY_GROUP_IDS=$(echo "$VPC_CONF_OBJ" | jq '.securityGroups[0]')
-            CLUSTER_NAME=$(echo "$SERVICES_OBJ" | jq '.services[].clusterArn')
-            echo "export SUBNET_ONE=$SUBNET_ONE" >> "$BASH_ENV"
-            echo "export SUBNET_TWO=$SUBNET_TWO" >> "$BASH_ENV"
-            echo "export SECURITY_GROUP_IDS=$SECURITY_GROUP_IDS" >> "$BASH_ENV"
-            echo "export CLUSTER_NAME=$CLUSTER_NAME" >> "$BASH_ENV"
-      - run:
-          name: Associate cluster
-          command: |
-            aws ecs put-cluster-capacity-providers \
-              --cluster "${ECS_CLUSTER_NAME}" \
-              --capacity-providers FARGATE FARGATE_SPOT  \
-              --default-capacity-provider-strategy capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1\
-              --region ${AWS_DEFAULT_REGION}
-      - aws-ecs/run-task:
-          cluster: $CLUSTER_NAME
-          launch-type: "FARGATE"
-          task-definition: contact-app
-          subnet-ids: "$SUBNET_ONE, $SUBNET_TWO"
-          security-group-ids: $SECURITY_GROUP_IDS
-          assign-public-ip: ENABLED
-          count: 1
+  # run-migrations:
+  #   executor: aws-cli/default
+  #   working_directory: ~/node/backend_app
+  #   steps:
+  #     - jq/install
+  #     - attach_workspace:
+  #         at: .
+  #     - aws-cli/setup:
+  #         profile-name: default
+  #     - run:
+  #         name: Get cluster info
+  #         command: |
+  #           SERVICES_OBJ=$(aws ecs describe-services --cluster "${ECS_CLUSTER_NAME}" --services "${ECS_SERVICE_NAME}")
+  #           VPC_CONF_OBJ=$(echo $SERVICES_OBJ | jq '.services[].networkConfiguration.awsvpcConfiguration')
+  #           SUBNET_ONE=$(echo "$VPC_CONF_OBJ" | jq '.subnets[0]')
+  #           SUBNET_TWO=$(echo "$VPC_CONF_OBJ" | jq '.subnets[1]')
+  #           SECURITY_GROUP_IDS=$(echo "$VPC_CONF_OBJ" | jq '.securityGroups[0]')
+  #           CLUSTER_NAME=$(echo "$SERVICES_OBJ" | jq '.services[].clusterArn')
+  #           echo "export SUBNET_ONE=$SUBNET_ONE" >> "$BASH_ENV"
+  #           echo "export SUBNET_TWO=$SUBNET_TWO" >> "$BASH_ENV"
+  #           echo "export SECURITY_GROUP_IDS=$SECURITY_GROUP_IDS" >> "$BASH_ENV"
+  #           echo "export CLUSTER_NAME=$CLUSTER_NAME" >> "$BASH_ENV"
+  #     - run:
+  #         name: Associate cluster
+  #         command: |
+  #           aws ecs put-cluster-capacity-providers \
+  #             --cluster "${ECS_CLUSTER_NAME}" \
+  #             --capacity-providers FARGATE FARGATE_SPOT  \
+  #             --default-capacity-provider-strategy capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1\
+  #             --region ${AWS_DEFAULT_REGION}
+  #     - aws-ecs/run-task:
+  #         cluster: $CLUSTER_NAME
+  #         launch-type: "FARGATE"
+  #         task-definition: contact-app
+  #         subnet-ids: "$SUBNET_ONE, $SUBNET_TWO"
+  #         security-group-ids: $SECURITY_GROUP_IDS
+  #         assign-public-ip: ENABLED
+  #         count: 1
 
 workflows:
   version: 2
@@ -89,15 +87,15 @@ workflows:
               only:
                 - main
           context: main
-      - run-migrations:
-          filters:
-            branches:
-              only:
-                - main
-          context: main
-          requires:
-            - aws-setup
-            - build-migration-image
+      # - run-migrations:
+      #     filters:
+      #       branches:
+      #         only:
+      #           - main
+      #     context: main
+      #     requires:
+      #       - aws-setup
+      #       - build-migration-image
             # - aws-ecs/deploy-service-update
       - build-migration-image:
           filters:
@@ -107,9 +105,9 @@ workflows:
           context: main
           requires:
             - aws-setup
-      # - aws-ecs/deploy-service-update:
-      #     requires:
-      #       - build-migration-image
-      #     family: "contact"
-      #     cluster: "fargate-spot"
-      #     container-image-name-updates: "container=contact,tag=${CIRCLE_SHA1}"
+      - aws-ecs/deploy-service-update:
+          requires:
+            - build-migration-image
+          family: "deploy-contact"
+          cluster: "fargate-spot"
+          container-image-name-updates: "container=deploy-contact,tag=${CIRCLE_SHA1}"
