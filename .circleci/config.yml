@@ -24,14 +24,21 @@ jobs:
             echo "export TASK_DEFINITION_ARN='${TASK_DEFINITION_ARN}'" >>
             "$BASH_ENV"
       - aws-ecs/verify-revision-is-deployed:
-          family: '${MY_APP_PREFIX}-service'
-          cluster: '${MY_APP_PREFIX}-cluster'
-          task-definition-arn: '${TASK_DEFINITION_ARN}'
+          family: "${MY_APP_PREFIX}-service"
+          cluster: "${MY_APP_PREFIX}-cluster"
+          task-definition-arn: "${TASK_DEFINITION_ARN}"
 
 workflows:
   build-and-deploy:
     jobs:
       - aws-ecr/build-and-push-image:
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-region: AWS_DEFAULT_REGION
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+          aws-cli-version: latest
+          dockerfile: Dockerfile
+          executor: aws-ecr/default
+          region: AWS_DEFAULT_REGION
           repo: "${MY_REPO}"
           tag: "latest"
       - aws-ecs/deploy-service-update:
@@ -40,3 +47,6 @@ workflows:
           family: "${MY_APP_PREFIX}-service"
           cluster: "${MY_APP_PREFIX}-cluster"
           container-image-name-updates: "container=${MY_APP_PREFIX},tag=latest"
+      - verify-deployment:
+          requires:
+            - aws-ecs/deploy-service-update
