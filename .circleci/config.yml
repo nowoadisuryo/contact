@@ -108,6 +108,5 @@ workflows:
       - aws-ecs/deploy-service-update:
           requires:
             - build-migration-image
-          family: "deploy-contact"
-          cluster: "fargate-spot"
-          container-image-name-updates: "container=deploy-contact,tag=${CIRCLE_SHA1}"
+          region: ap-southeast-3
+          task-definition: contact-app:1
