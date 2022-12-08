@@ -46,7 +46,7 @@ workflows:
             - aws-ecr/build-and-push-image
           family: "${MY_APP_PREFIX}"
           cluster: "contact-app-cluster"
-          container-image-name-updates: "container=${MY_APP_PREFIX},tag=latest"
+          container-image-name-updates: "container=${MY_APP_PREFIX}-service,tag=latest"
       - verify-deployment:
           requires:
             - aws-ecs/deploy-service-update
