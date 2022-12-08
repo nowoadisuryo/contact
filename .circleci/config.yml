@@ -25,7 +25,7 @@ jobs:
             "$BASH_ENV"
       - aws-ecs/verify-revision-is-deployed:
           family: "${MY_APP_PREFIX}"
-          cluster: "${MY_APP_PREFIX}-cluster"
+          cluster: "arn:aws:ecs:ap-southeast-3:545108995501:service/contact-app-cluster/contact-app-service"
           task-definition-arn: "${TASK_DEFINITION_ARN}"
 
 workflows:
@@ -45,7 +45,7 @@ workflows:
           requires:
             - aws-ecr/build-and-push-image
           family: "${MY_APP_PREFIX}"
-          cluster: "${MY_APP_PREFIX}-cluster"
+          cluster: "arn:aws:ecs:ap-southeast-3:545108995501:service/contact-app-cluster/contact-app-service"
           container-image-name-updates: "container=${MY_APP_PREFIX},tag=latest"
       - verify-deployment:
           requires:
