@@ -46,6 +46,7 @@ workflows:
             - aws-ecr/build-and-push-image
           family: "contact-app"
           cluster: "contact-app-cluster"
+          service-name: "contact-app-service"
           container-image-name-updates: "container=contact-app,tag=latest"
       - verify-deployment:
           requires:
