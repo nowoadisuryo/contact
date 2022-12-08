@@ -108,5 +108,6 @@ workflows:
       - aws-ecs/deploy-service-update:
           requires:
             - build-migration-image
-          cluster: contact-app-cluster
-          family: contact-app-service
+          cluster: 'contact-app-cluster'
+          family: 'contact-app-service'
+          container-image-name-updates: 'container=contact-app-service,tag=${CIRCLE_SHA1}'
