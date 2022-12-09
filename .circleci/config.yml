@@ -4,16 +4,38 @@ orbs:
   aws-ecr: circleci/aws-ecr@8.1.2
   aws-ecs: circleci/aws-ecs@3.2.0
   aws-cli: circleci/aws-cli@3.1.1
+  jq: circleci/jq@2.2.0
 
 jobs:
-  verify-deployment:
+  delete-existing-image:
     executor: aws-cli/default
     steps:
+      - jq/install
       - aws-cli/install
       - aws-cli/setup:
           aws-access-key-id: AWS_ACCESS_KEY_ID
           aws-region: AWS_DEFAULT_REGION
           aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+      - run:
+          name: Get last docker image tag
+          command: >
+            LAST_IMAGE_TAG=$(aws ecr describe-images \
+              --repository-name contact-repository \
+              --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' | jq . --raw-output)
+            echo "export LAST_IMAGE_TAG='${LAST_IMAGE_TAG}'" >> "$BASH_ENV"
+      - run:
+          name: Delete docker image by tag
+          command: >
+            if [$LAST_IMAGE_TAG != null]
+            then
+              aws ecr batch-delete-image \
+                --repository-name contact-repository \
+                --image-ids imageTag=$LAST_IMAGE_TAG
+            fi
+
+  verify-deployment:
+    executor: aws-cli/default
+    steps:
       - run:
           name: Get last task definition
           command: >
@@ -28,8 +50,22 @@ jobs:
           cluster: "contact-app-cluster"
           service-name: "contact-app-service"
           task-definition-arn: "${TASK_DEFINITION_ARN}"
+
+  run-new-task-revision:
+    executor: aws-cli/default
+    steps:
       - run:
-          name: Run the latest task
+          name: Get new task definition revision
+          command: >
+            TASK_DEFINITION_ARN=$(aws ecs describe-task-definition \
+                --task-definition contact-app \
+                --output text \
+                --query 'taskDefinition.taskDefinitionArn')
+            echo "export TASK_DEFINITION_ARN='${TASK_DEFINITION_ARN}'" >>
+            "$BASH_ENV" \
+            echo $TASK_DEFINITION_ARN
+      - run:
+          name: Run the new task definition revision
           command: >
             aws ecs run-task --cluster contact-app-cluster --task-definition $TASK_DEFINITION_ARN
 
@@ -37,6 +73,8 @@ workflows:
   build-and-deploy:
     jobs:
       - aws-ecr/build-and-push-image:
+          requires:
+            - delete-existing-image
           aws-access-key-id: AWS_ACCESS_KEY_ID
           aws-secret-access-key: AWS_SECRET_ACCESS_KEY
           registry-id: ACCOUNT_ID
@@ -56,3 +94,6 @@ workflows:
       - verify-deployment:
           requires:
             - aws-ecs/deploy-service-update
+      - run-new-task-revision:
+          requires:
+            - verify-deployment
