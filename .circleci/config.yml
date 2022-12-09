@@ -55,8 +55,8 @@ jobs:
       - run:
           name: Stop all existing task
           command: |
-            OLD_TASK_ID=$(aws ecs list-tasks --cluster contact-app-cuslter --desired-status RUNNING --family contact-app | egrep "task/" | sed -E "s/.*task\/(.*)\"/\1/")
-            aws ecs stop-task --cluster contact-app-cuslter --task ${OLD_TASK_ID}
+            OLD_TASK_ID=$(aws ecs list-tasks --cluster "contact-app-cluster" --desired-status RUNNING --family "contact-app" | egrep "task/" | sed -E "s/.*task\/(.*)\"/\1/")
+            aws ecs stop-task --cluster "contact-app-cluster" --task ${OLD_TASK_ID}
   run-new-task-revision:
     executor: aws-cli/default
     steps:
