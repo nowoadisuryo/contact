@@ -23,11 +23,11 @@ jobs:
               --repository-name contact-repository \
               --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' | jq . --raw-output)
             echo "export LAST_IMAGE_TAG='${LAST_IMAGE_TAG}'" >> "$BASH_ENV" \
-            echo $LAST_IMAGE_TAG
+            echo "$LAST_IMAGE_TAG"
       - run:
           name: Delete docker image by tag
           command: >
-            if [$LAST_IMAGE_TAG != null]; then
+            if [ -z "$LAST_IMAGE_TAG" ]; then
               aws ecr batch-delete-image \
                 --repository-name contact-repository \
                 --image-ids imageTag=$LAST_IMAGE_TAG
@@ -58,11 +58,25 @@ jobs:
   run-new-task-revision:
     executor: aws-cli/default
     steps:
+      - jq/install
       - aws-cli/install
       - aws-cli/setup:
           aws-access-key-id: AWS_ACCESS_KEY_ID
           aws-region: AWS_DEFAULT_REGION
           aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+      - run:
+          name: Get cluster info
+          command: |
+            SERVICES_OBJ=$(aws ecs describe-services --cluster "${ECS_CLUSTER_NAME}" --services "${ECS_SERVICE_NAME}")
+            VPC_CONF_OBJ=$(echo $SERVICES_OBJ | jq '.services[].networkConfiguration.awsvpcConfiguration')
+            SUBNET_ONE=$(echo "$VPC_CONF_OBJ" | jq '.subnets[0]')
+            SUBNET_TWO=$(echo "$VPC_CONF_OBJ" | jq '.subnets[1]')
+            SECURITY_GROUP_IDS=$(echo "$VPC_CONF_OBJ" | jq '.securityGroups[0]')
+            CLUSTER_NAME=$(echo "$SERVICES_OBJ" | jq '.services[].clusterArn')
+            echo "export SUBNET_ONE=$SUBNET_ONE" >> "$BASH_ENV"
+            echo "export SUBNET_TWO=$SUBNET_TWO" >> "$BASH_ENV"
+            echo "export SECURITY_GROUP_IDS=$SECURITY_GROUP_IDS" >> "$BASH_ENV"
+            echo "export CLUSTER_NAME=$CLUSTER_NAME" >> "$BASH_ENV"
       - run:
           name: Get new task definition revision
           command: >
@@ -74,9 +88,22 @@ jobs:
             "$BASH_ENV" \
             echo $TASK_DEFINITION_ARN
       - run:
-          name: Run the new task definition revision
-          command: >
-            aws ecs run-task --cluster contact-app-cluster --task-definition $TASK_DEFINITION_ARN
+          name: Associate cluster
+          command: |
+            aws ecs put-cluster-capacity-providers \
+              --cluster "${ECS_CLUSTER_NAME}" \
+              --capacity-providers FARGATE FARGATE_SPOT  \
+              --default-capacity-provider-strategy capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1\
+              --region ${AWS_DEFAULT_REGION}
+      - aws-ecs/run-task:
+          cluster: $CLUSTER_NAME
+          capacity-provider-strategy: capacityProvider=FARGATE,weight=1 capacityProvider=FARGATE_SPOT,weight=1
+          launch-type: ""
+          task-definition: $TASK_DEFINITION_ARN
+          subnet-ids: "$SUBNET_ONE, $SUBNET_TWO"
+          security-group-ids: $SECURITY_GROUP_IDS
+          assign-public-ip: ENABLED
+          count: 2
 
 workflows:
   build-and-deploy:
