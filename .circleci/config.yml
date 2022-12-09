@@ -35,6 +35,11 @@ jobs:
   verify-deployment:
     executor: aws-cli/default
     steps:
+      - aws-cli/install
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-region: AWS_DEFAULT_REGION
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
       - run:
           name: Get last task definition
           command: >
@@ -53,6 +58,11 @@ jobs:
   run-new-task-revision:
     executor: aws-cli/default
     steps:
+      - aws-cli/install
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-region: AWS_DEFAULT_REGION
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
       - run:
           name: Get new task definition revision
           command: >
