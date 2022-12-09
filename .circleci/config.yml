@@ -83,6 +83,7 @@ jobs:
           command: >
             TASK_DEFINITION_ARN=$(aws ecs describe-task-definition \
                 --task-definition contact-app \
+                --env-file arn:aws:s3:::contact-app-ap-southeast-3/.env \
                 --output text \
                 --query 'taskDefinition.taskDefinitionArn')
             echo "export TASK_DEFINITION_ARN='${TASK_DEFINITION_ARN}'" >>
