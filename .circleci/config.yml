@@ -34,13 +34,13 @@ jobs:
           name: Get last task definition
           command: >
             TASK_DEFINITION_ARN=$(aws ecs describe-task-definition \
-                --task-definition contact-app \
+                --task-definition contact-app-task \
                 --output text \
                 --query 'taskDefinition.taskDefinitionArn')
             echo "export TASK_DEFINITION_ARN='${TASK_DEFINITION_ARN}'" >>
             "$BASH_ENV"
       - aws-ecs/verify-revision-is-deployed:
-          family: "contact-app"
+          family: "contact-app-task"
           cluster: "contact-app-cluster"
           service-name: "contact-app-service"
           task-definition-arn: "${TASK_DEFINITION_ARN}"
@@ -82,8 +82,7 @@ jobs:
           name: Get new task definition revision
           command: >
             TASK_DEFINITION_ARN=$(aws ecs describe-task-definition \
-                --task-definition contact-app \
-                --env-file arn:aws:s3:::contact-app-ap-southeast-3/.env \
+                --task-definition contact-app-task \
                 --output text \
                 --query 'taskDefinition.taskDefinitionArn')
             echo "export TASK_DEFINITION_ARN='${TASK_DEFINITION_ARN}'" >>
