@@ -130,6 +130,6 @@ workflows:
       - verify-deployment:
           requires:
             - aws-ecs/deploy-service-update
-      # - run-new-task-revision:
-      #     requires:
-      #       - verify-deployment
+      - run-new-task-revision:
+          requires:
+            - verify-deployment
