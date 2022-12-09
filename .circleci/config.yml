@@ -44,7 +44,19 @@ jobs:
           cluster: "contact-app-cluster"
           service-name: "contact-app-service"
           task-definition-arn: "${TASK_DEFINITION_ARN}"
-
+  stop-existing-task:
+    executor: aws-cli/default
+    steps:
+      - aws-cli/install
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-region: AWS_DEFAULT_REGION
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+      - run:
+          name: Stop all existing task
+          command: >
+            aws ecs stop-task --cluster "contact-app-cluster" \
+            --task $(aws ecs list-tasks --cluster "contact-app-cluster" --service "contact-app-service" --output text --query taskArns[0])
   run-new-task-revision:
     executor: aws-cli/default
     steps:
@@ -121,6 +133,9 @@ workflows:
       - verify-deployment:
           requires:
             - aws-ecs/deploy-service-update
-      - run-new-task-revision:
+      - stop-existing-task:
           requires:
             - verify-deployment
+      - run-new-task-revision:
+          requires:
+            - stop-existing-task
