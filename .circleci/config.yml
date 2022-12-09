@@ -22,8 +22,7 @@ jobs:
             LAST_IMAGE_TAG=$(aws ecr describe-images \
               --repository-name contact-repository \
               --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' | jq . --raw-output)
-            echo "export LAST_IMAGE_TAG='${LAST_IMAGE_TAG}'" >> "$BASH_ENV" \
-            echo "$LAST_IMAGE_TAG"
+            echo "export LAST_IMAGE_TAG=$LAST_IMAGE_TAG" >> "$BASH_ENV"
       - run:
           name: Delete docker image by tag
           command: >
