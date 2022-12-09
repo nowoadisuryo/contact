@@ -47,6 +47,7 @@ jobs:
   stop-existing-task:
     executor: aws-cli/default
     steps:
+      - checkout
       - aws-cli/install
       - aws-cli/setup:
           aws-access-key-id: AWS_ACCESS_KEY_ID
@@ -54,11 +55,7 @@ jobs:
           aws-secret-access-key: AWS_SECRET_ACCESS_KEY
       - run:
           name: Stop all existing task
-          command: |
-            OLD_TASK_ID=$(aws ecs list-tasks --cluster contact-app-cluster --desired-status RUNNING --family contact-app --query taskArns[0] | egrep "task/" | sed -E "s/.*task\/(.*)\"/\1/")
-            if [ -z $OLD_TASK_ID ]; then
-              aws ecs stop-task --cluster contact-app-cluster --task ${OLD_TASK_ID}
-            fi
+          command: ./scripts/stop-all-task.sh
   run-new-task-revision:
     executor: aws-cli/default
     steps:
