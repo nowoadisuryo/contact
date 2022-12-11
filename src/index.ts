@@ -14,7 +14,7 @@ AuthenticationMiddleware(app)
 
 // Routes
 app.get('/', function (req, res) {
-    res.send('Hello world!')
+    res.send('Hello world! My name is Nowo Adi Suryo.')
 })
 app.use('/user', UserRouter)
 app.use('/contact', ContactRouter)
