@@ -4,7 +4,7 @@ import { HOST, PORT } from './utilities/Environments.js';
 import { router as ContactRouter } from './controllers/ContactController.js'
 import { router as UserRouter } from "./controllers/UserController.js"
 import AuthenticationMiddleware from './middlewares/AuthenticationMiddleware.js'
-import ErrorHandlingMiddleware from './middlewares/ErrorHandlingMiddleware.js';
+import ErrorHandlingMiddleware from './middlewares/ErrorHandlingMiddleware.js'
 
 const app: Express = express();
 
@@ -13,11 +13,8 @@ app.use(bodyParser.urlencoded({ extended: false }))
 AuthenticationMiddleware(app)
 
 // Routes
-app.use('/', function () {
-    return 'Welcome to the backend server'
-})
-app.use('/hello', function () {
-    return 'Hello world'
+app.get('/', function (req, res) {
+    res.send('Hello world!')
 })
 app.use('/user', UserRouter)
 app.use('/contact', ContactRouter)

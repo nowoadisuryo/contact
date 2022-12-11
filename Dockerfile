@@ -13,7 +13,5 @@ COPY /src ./src
 COPY tsconfig.json ./
 
 RUN npm run build
-RUN rm -r ./src
-RUN rm tsconfig.json
 
 CMD ["pm2-runtime", "dist/index.js"]
